@@ -8,6 +8,7 @@ TagManager:
   - Grass
   - Wood
   - Sand
+  - Interactable
   layers:
   - Default
   - TransparentFX

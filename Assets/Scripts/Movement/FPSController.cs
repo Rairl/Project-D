@@ -1,8 +1,11 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using TMPro;
 
 public class FPSController : MonoBehaviour
 {
+
+    [Header("Movement")]
     public CharacterController controller;
     public Transform cameraPivot;
 
@@ -41,6 +44,16 @@ public class FPSController : MonoBehaviour
 
     float stepTimer;
 
+    [Header("Interaction UI")]
+    public GameObject interactUI;
+    public TMP_Text interactUIText;
+    public float interactDistance = 3f;
+    bool isInteracting = false;
+
+    [Header("Cameras")]
+    public Camera mainCamera;
+    private Camera currentCamera;
+
     void Awake()
     {
         input = new PlayerInputActions();
@@ -52,6 +65,8 @@ public class FPSController : MonoBehaviour
         Cursor.visible = false;
 
         defaultYPos = cameraPivot.localPosition.y;
+        currentCamera = mainCamera;
+        mainCamera.enabled = true;
     }
 
     void OnEnable()
@@ -71,10 +86,19 @@ public class FPSController : MonoBehaviour
 
     void Update()
     {
-        Move();
-        Look();
-        HeadBob();
-        HandleFootsteps();
+        if (!isInteracting)
+        {
+            Move();
+            Look();
+            HeadBob();
+            HandleFootsteps();
+        }
+        else
+        {
+            CheckExitInteraction();
+        }
+
+        CheckInteractableUI();
     }
 
     void Move()
@@ -130,12 +154,104 @@ public class FPSController : MonoBehaviour
         Ray ray = new Ray(cameraPivot.position, cameraPivot.forward);
         RaycastHit hit;
 
-        if (Physics.Raycast(ray, out hit, 3f))
+        if (Physics.Raycast(ray, out hit, interactDistance))
         {
-            if (hit.collider.CompareTag("Interactable"))
+            IInteractable interactable = hit.collider.GetComponent<IInteractable>();
+            if (interactable != null)
             {
-                hit.collider.SendMessage("Interact", SendMessageOptions.DontRequireReceiver);
+                interactable.Interact();
+
+                // Optional: switch camera if object has camera
+                Camera cam = interactable.GetInteractionCamera();
+                if (cam != null)
+                    SwitchCamera(cam);
+
+                if (cam != null)
+                {
+                    Debug.Log("Switching to camera: " + cam.name);
+                    SwitchCamera(cam);
+                }
             }
+        }
+    }
+
+    void CheckInteractableUI()
+    {
+        Ray ray = new Ray(transform.position + Vector3.up * 1.6f, cameraPivot.forward);
+        RaycastHit hit;
+
+        bool interactableDetected = false;  // tracks if we should show UI
+        string interactableName = "";
+
+        if (Physics.Raycast(ray, out hit, interactDistance))
+        {
+            IInteractable interactable = hit.collider.GetComponent<IInteractable>();
+
+            if (interactable != null)
+            {
+                interactableDetected = true;
+
+                // Try to get interactName from MonoBehaviour
+                var mb = hit.collider.GetComponent<MonoBehaviour>();
+                if (mb != null)
+                {
+                    var field = mb.GetType().GetField("interactName");
+                    if (field != null)
+                        interactableName = field.GetValue(mb).ToString();
+                }
+            }
+        }
+
+        // Only toggle UI if state changed
+        if (interactableDetected && !interactUI.activeSelf)
+        {
+            interactUI.SetActive(true);
+            interactUIText.text = "Press E to " + interactableName;
+        }
+        else if (!interactableDetected && interactUI.activeSelf)
+        {
+            interactUI.SetActive(false);
+        }
+    }
+
+    public void StartInteraction()
+    {
+        isInteracting = true;
+
+        // Optional: unlock cursor for UI tasks
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    public void EndInteraction()
+    {
+        isInteracting = false;
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        ReturnToMainCamera();
+    }
+
+    public void SwitchCamera(Camera newCamera)
+    {
+        if (currentCamera != null)
+            currentCamera.enabled = false;
+
+        currentCamera = newCamera;
+        currentCamera.enabled = true;
+    }
+
+    public void ReturnToMainCamera()
+    {
+        SwitchCamera(mainCamera);
+    }
+
+    void CheckExitInteraction()
+    {
+        if (Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            EndInteraction();
         }
     }
 
@@ -183,6 +299,7 @@ public class FPSController : MonoBehaviour
             if (clips != null && clips.Length > 0)
             {
                 int index = Random.Range(0, clips.Length);
+                footstepSource.pitch = Random.Range(0.95f, 1.05f);
                 footstepSource.PlayOneShot(clips[index]);
             }
         }
