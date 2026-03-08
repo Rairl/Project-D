@@ -9,6 +9,7 @@ TagManager:
   - Wood
   - Sand
   - Interactable
+  - Fuel
   layers:
   - Default
   - TransparentFX

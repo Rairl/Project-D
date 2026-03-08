@@ -54,6 +54,22 @@ public class FPSController : MonoBehaviour
     public Camera mainCamera;
     private Camera currentCamera;
 
+    [Header("Object Holding")]
+    public Transform holdPoint;
+    public GameObject heldObject;
+    public float holdSmooth = 10f;
+    public Quaternion heldRotationOffset;
+
+    [Header("Object Rotation")]
+    public float rotateSensitivity = 3f;
+    bool rotationMode = false;
+
+    [Header("Held Object Sway")]
+    public float swayAmount = 0.02f;      // how much it sways
+    public float swaySpeed = 5f;          // how fast it sways
+    float swayTimer;
+    Vector3 holdBasePosition;
+
     void Awake()
     {
         input = new PlayerInputActions();
@@ -89,18 +105,27 @@ public class FPSController : MonoBehaviour
         if (!isInteracting)
         {
             Move();
-            Look();
+
+            if (!rotationMode)
+            {
+                Look();
+            }
+
             HeadBob();
-            HandleFootsteps();
+            HandleFootsteps();           
         }
         else
         {
             CheckExitInteraction();
         }
 
+        HandleHeldObject();
+        HandleRotationMode();
+
         CheckInteractableUI();
     }
 
+    //Movement
     void Move()
     {
         float speed = walking ? walkSpeed : runSpeed;
@@ -117,6 +142,7 @@ public class FPSController : MonoBehaviour
         controller.Move(Vector3.up * yVelocity * Time.deltaTime);
     }
 
+    //Look
     void Look()
     {
         float mouseX = lookInput.x * mouseSensitivity * Time.deltaTime * 100f;
@@ -129,6 +155,7 @@ public class FPSController : MonoBehaviour
         transform.Rotate(Vector3.up * mouseX);
     }
 
+    //HeadBob
     void HeadBob()
     {
         if (moveInput.x == 0 && moveInput.y == 0)
@@ -149,6 +176,7 @@ public class FPSController : MonoBehaviour
         cameraPivot.localPosition = newPos;
     }
 
+    //Interact
     void Interact()
     {
         Ray ray = new Ray(cameraPivot.position, cameraPivot.forward);
@@ -175,6 +203,7 @@ public class FPSController : MonoBehaviour
         }
     }
 
+    //Interactable UI
     void CheckInteractableUI()
     {
         Ray ray = new Ray(transform.position + Vector3.up * 1.6f, cameraPivot.forward);
@@ -214,6 +243,7 @@ public class FPSController : MonoBehaviour
         }
     }
 
+    //Start/End Interaction
     public void StartInteraction()
     {
         isInteracting = true;
@@ -233,6 +263,16 @@ public class FPSController : MonoBehaviour
         ReturnToMainCamera();
     }
 
+    //Exit Interaction
+    void CheckExitInteraction()
+    {
+        if (Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            EndInteraction();
+        }
+    }
+
+    //Switch Camera
     public void SwitchCamera(Camera newCamera)
     {
         if (currentCamera != null)
@@ -247,14 +287,64 @@ public class FPSController : MonoBehaviour
         SwitchCamera(mainCamera);
     }
 
-    void CheckExitInteraction()
+    //Hold Object
+    void HandleHeldObject()
     {
-        if (Keyboard.current.escapeKey.wasPressedThisFrame)
+        if (heldObject == null) return;
+
+        // Smoothly follow hold point
+        Vector3 targetPos = holdPoint.position;
+        Quaternion targetRot = holdPoint.rotation * heldRotationOffset;
+
+        // Add sway only if player is moving and not in rotation mode
+        if (!rotationMode && moveInput.magnitude > 0.1f)
         {
-            EndInteraction();
+            swayTimer += Time.deltaTime * swaySpeed;
+            Vector3 swayOffset = new Vector3(
+                Mathf.Sin(swayTimer) * swayAmount,    // sway left/right
+                Mathf.Sin(swayTimer * 2f) * swayAmount, // sway up/down
+                0
+            );
+            targetPos += swayOffset;
         }
+        else
+        {
+            swayTimer = 0f; // reset sway when idle
+        }
+
+        heldObject.transform.position = Vector3.Lerp(
+            heldObject.transform.position,
+            targetPos,
+            Time.deltaTime * holdSmooth
+        );
+
+        heldObject.transform.rotation = targetRot;
     }
 
+    //Hold Object Rotation
+    void HandleRotationMode()
+    {
+        if (heldObject == null) return;
+
+        // Enter rotation mode
+        if (Keyboard.current.rKey.isPressed)
+        {
+            rotationMode = true;
+        }
+        else
+        {
+            rotationMode = false;
+        }
+
+        if (!rotationMode) return;
+
+        float mouseX = lookInput.x * rotateSensitivity;
+        float mouseY = lookInput.y * rotateSensitivity;
+
+        heldRotationOffset *= Quaternion.Euler(-mouseY, 0, mouseX);
+    }
+
+    //Footsteps
     void HandleFootsteps()
     {
         if (!controller.isGrounded) return;  // only grounded
@@ -273,6 +363,7 @@ public class FPSController : MonoBehaviour
         }
     }
 
+    //Footsteps audio
     void PlayFootstepSurface()
     {
         Ray ray = new Ray(transform.position, Vector3.down);
