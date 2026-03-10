@@ -179,6 +179,13 @@ public class FPSController : MonoBehaviour
     //Interact
     void Interact()
     {
+        // If holding an object, drop it
+        if (heldObject != null)
+        {
+            DropObject();
+            return;
+        }
+
         Ray ray = new Ray(cameraPivot.position, cameraPivot.forward);
         RaycastHit hit;
 
@@ -318,6 +325,13 @@ public class FPSController : MonoBehaviour
             Time.deltaTime * holdSmooth
         );
 
+        if (heldObject != null && heldObject.GetComponent<RuneObject>() != null)
+        {
+            FinalRunePuzzle puzzle = FindFirstObjectByType<FinalRunePuzzle>();
+            if (puzzle != null)
+                puzzle.UpdateSlotHighlights(heldObject);
+        }
+
         heldObject.transform.rotation = targetRot;
     }
 
@@ -342,6 +356,47 @@ public class FPSController : MonoBehaviour
         float mouseY = lookInput.y * rotateSensitivity;
 
         heldRotationOffset *= Quaternion.Euler(-mouseY, 0, mouseX);
+    }
+
+    //Drop Object
+    void DropObject()
+    {
+        if (heldObject == null) return;
+
+        Rigidbody rb = heldObject.GetComponent<Rigidbody>();
+        Collider col = heldObject.GetComponent<Collider>();
+
+        // move slightly in front of player
+        heldObject.transform.position = cameraPivot.position + cameraPivot.forward * 1.2f;
+
+        if (rb != null)
+        {
+            rb.useGravity = true;
+            rb.linearVelocity = Vector3.zero;
+        }
+
+        // re-enable collider
+        if (col != null)
+            col.enabled = true;
+
+        // Check if final puzzle exists in scene
+        FinalRunePuzzle puzzle = FindFirstObjectByType<FinalRunePuzzle>();
+        if (puzzle != null && heldObject.GetComponent<RuneObject>() != null)
+        {
+            puzzle.TryPlaceRune(heldObject);
+        }
+
+        if (puzzle != null)
+        {
+            foreach (Transform slot in puzzle.runeSlots)
+            {
+                SlotHighlight sh = slot.GetComponent<SlotHighlight>();
+                if (sh != null)
+                    sh.ResetSlot();
+            }
+        }
+
+        heldObject = null;
     }
 
     //Footsteps
