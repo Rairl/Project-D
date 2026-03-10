@@ -75,6 +75,12 @@ public class FPSController : MonoBehaviour
         input = new PlayerInputActions();
     }
 
+    // Returns true if player is running
+    public bool IsRunning
+    {
+        get { return !walking && moveInput.magnitude > 0.1f; }
+    }
+
     void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;

@@ -10,6 +10,7 @@ TagManager:
   - Sand
   - Interactable
   - Fuel
+  - Wall
   layers:
   - Default
   - TransparentFX
