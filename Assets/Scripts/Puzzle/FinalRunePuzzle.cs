@@ -17,6 +17,8 @@ public class FinalRunePuzzle : MonoBehaviour
 
     private GameObject[] placedRunes;       // Tracks runes currently in slots
 
+    public GameObject Door;
+
     void Start()
     {
         placedRunes = new GameObject[runeSlots.Length];
@@ -140,7 +142,6 @@ public class FinalRunePuzzle : MonoBehaviour
         // Puzzle complete
         Debug.Log("Final Rune Puzzle Solved!");
 
-        if (door != null)
-            door.OpenDoor();
+        Door.SetActive(true);
     }
 }
