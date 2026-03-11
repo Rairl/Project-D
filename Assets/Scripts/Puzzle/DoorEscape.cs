@@ -35,6 +35,9 @@ public class DoorEscape : MonoBehaviour
         // Wait another 3 seconds
         yield return new WaitForSeconds(2f);
 
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
         // Load main menu
         SceneManager.LoadScene("MainMenu");
     }
