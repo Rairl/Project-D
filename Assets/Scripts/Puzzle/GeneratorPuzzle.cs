@@ -19,6 +19,10 @@ public class GeneratorPuzzle : MonoBehaviour
     [Header("Puzzle")]
     public bool activated = false;
 
+    [Header("Audio")]
+    public AudioSource runeSFX;
+    public AudioSource generatorSFX;
+
     void OnCollisionEnter(Collision collision)
     {
         if (activated) return;
@@ -53,6 +57,8 @@ public class GeneratorPuzzle : MonoBehaviour
         Vector3 startPos = fuel.transform.position;
         Quaternion startRot = fuel.transform.rotation;
 
+        generatorSFX.Play();
+
         while (t < 1f)
         {
             t += Time.deltaTime * snapSpeed;
@@ -71,6 +77,8 @@ public class GeneratorPuzzle : MonoBehaviour
         // Spawn rune
         if (runeToSpawn != null && runeSpawnPoint != null)
             Instantiate(runeToSpawn, runeSpawnPoint.position, Quaternion.identity);
+
+        runeSFX.Play();
 
         // Show wall pattern
         if (wallPattern != null)
