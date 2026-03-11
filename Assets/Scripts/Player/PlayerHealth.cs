@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using UnityEngine.SceneManagement;
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -10,6 +11,12 @@ public class PlayerHealth : MonoBehaviour
     public Transform respawnPoint;
     public float invincibleTime = 1f; // prevent instant death after teleport
     private bool invincible = false;
+
+    [Header("LosePanel")]
+    public AudioSource diedSFX;
+    public CanvasGroup losePanel;   // UI panel with CanvasGroup for fading
+    public float fadeDuration = 1f;
+    public GameObject enemy;
 
     void Start()
     {
@@ -56,7 +63,39 @@ public class PlayerHealth : MonoBehaviour
     {
         Debug.Log("Player Died!");
         // You can add Game Over panel or reload scene here
-        // For example:
-        // SceneManager.LoadScene("MainMenu");
+        StartCoroutine(LoseSequence());
+        Destroy(enemy);
+    }
+
+    IEnumerator LoseSequence()
+    {
+        // Play running SFX
+        if (diedSFX != null)
+            diedSFX.Play();
+
+        // Wait 3 seconds
+        yield return new WaitForSeconds(1f);
+
+        // Fade in win panel
+        yield return StartCoroutine(FadeInPanel());
+
+        // Wait another 3 seconds
+        yield return new WaitForSeconds(2f);
+
+        // Load main menu
+        SceneManager.LoadScene("MainMenu");
+    }
+
+    IEnumerator FadeInPanel()
+    {
+        float time = 0f;
+        losePanel.gameObject.SetActive(true);
+
+        while (time < fadeDuration)
+        {
+            time += Time.deltaTime;
+            losePanel.alpha = time / fadeDuration;
+            yield return null;
+        }
     }
 }
