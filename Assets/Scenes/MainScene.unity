@@ -7340,8 +7340,8 @@ MonoBehaviour:
   runDetectRange: 15
   patrolRadius: 100
   patrolSpeed: 3.5
-  chaseSpeed: 3.5
-  chaseSpeedFast: 6
+  chaseSpeed: 2.5
+  chaseSpeedFast: 2.5
   detectSFX: {fileID: 192650452}
   chaseMusicSFX: {fileID: 1927564058}
 --- !u!54 &386099927
@@ -26553,7 +26553,10 @@ MonoBehaviour:
 
     E to Interact
 
-    R to Rotate interactables'
+    R to Rotate interactables
+
+    Shift
+    to toggle Walk/Run'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
